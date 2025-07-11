@@ -14,7 +14,6 @@ const Editor: React.FC<EditorProps> = ({ value, onChange, height = 200 }) => {
         onChange(raw);
     };
 
-    // Formatting buttons for textarea (insert markdown syntax)
     const insertAtCursor = (before: string, after: string = "") => {
         const textarea = document.getElementById("editor-textarea") as HTMLTextAreaElement;
         if (!textarea) return;
