@@ -50,7 +50,6 @@ const SingleBlog: React.FC = () => {
   const [commentError, setCommentError] = useState<string | null>(null);
   const [showCommentForm, setShowCommentForm] = useState(false);
 
-  // Header with blog icon and title
   const Header = (
     <AppBar position="static" color="primary" elevation={2}>
       <Toolbar>
