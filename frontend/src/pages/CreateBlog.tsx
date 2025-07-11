@@ -60,7 +60,6 @@ const CreateBlog: React.FC = () => {
     const { getToken } = useAuth();
     const { user } = useUser();
 
-    // Check if user exists in backend (users API on port 3000)
     useEffect(() => {
         const checkUser = async () => {
             if (!user?.id) return;
