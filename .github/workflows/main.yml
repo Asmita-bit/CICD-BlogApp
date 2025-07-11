@@ -149,7 +149,6 @@ jobs:
         with:
           name: backend2-${{ needs.version-and-tag.outputs.new_tag }}.tar
           path: backend2-${{ needs.version-and-tag.outputs.new_tag }}.tar
-s
   docker-deployment:
     runs-on: frontend
     needs: [docker-build-push-frontend, docker-build-push-backend]
