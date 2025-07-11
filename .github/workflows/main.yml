@@ -1,1 +1,214 @@
-fds
+name: Fellowship Project CI/CD Pipeline
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - frontend/**
+      - backend1/**
+      - backend2/**
+      - docker-compose.yaml
+      - .github/workflows/main.yml
+jobs:
+  version-and-tag:
+    runs-on: frontend
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      new_tag: ${{ steps.tag.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch all tags and check existing tags
+        run: |
+          git fetch --tags
+          echo "Existing tags:"
+          git tag || true
+      - name: Ensure at least one initial tag exists
+        run: |
+          git fetch --tags
+          if [ -z "$(git tag)" ]; then
+            echo "No tags found. Creating v0.0.0..."
+            git tag v0.0.0
+            git push origin v0.0.0
+          else
+            echo "Tags already exist."
+          fi
+      - name: Bump and Tag Version (semantic versioning)
+        id: tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.PAT_TOKEN }}
+          release_branches: main
+          default_bump: patch
+          tag_prefix: "v"
+          fetch_all_tags: true
+          custom_release_rules: |
+            feat:minor
+            fix:patch
+            chore:patch
+            docs:patch
+            refactor:patch
+            BREAKING CHANGE:major
+      - name: Validate new tag value
+        if: ${{ steps.tag.outputs.new_tag == '' }}
+        run: |
+          echo "No new tag generated — likely no matching commit message or missing commits."
+          exit 1
+      - name: Show New Tag
+        run: echo "New version is ${{ steps.tag.outputs.new_tag }}"
+  docker-build-push-frontend:
+    runs-on: frontend
+    needs: version-and-tag
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          install: true
+          driver: docker-container
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and Push Frontend Image (with cache)
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker buildx build \
+            --build-arg VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }} \
+            --cache-from=type=local,src=/tmp/.buildx-cache \
+            --cache-to=type=local,dest=/tmp/.buildx-cache-new \
+            --load \
+            -t ${{ secrets.DOCKER_USERNAME }}/frontend:${{ needs.version-and-tag.outputs.new_tag }} ./frontend
+          docker tag ${{ secrets.DOCKER_USERNAME }}/frontend:${{ needs.version-and-tag.outputs.new_tag }} ${{ secrets.DOCKER_USERNAME }}/frontend:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/frontend:${{ needs.version-and-tag.outputs.new_tag }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/frontend:latest
+          rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      - name: Save Frontend Docker Image as tar
+        run: |
+          docker save -o frontend-${{ needs.version-and-tag.outputs.new_tag }}.tar ${{ secrets.DOCKER_USERNAME }}/frontend:${{ needs.version-and-tag.outputs.new_tag }}
+      - name: Upload Frontend Docker Image tar Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-${{ needs.version-and-tag.outputs.new_tag }}.tar
+          path: frontend-${{ needs.version-and-tag.outputs.new_tag }}.tar
+  docker-build-push-backend:
+    runs-on: backend
+    needs: [version-and-tag, docker-build-push-frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          install: true
+          driver: docker-container
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and Push Backend1 Image (with cache)
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker buildx build \
+            --cache-from=type=local,src=/tmp/.buildx-cache \
+            --cache-to=type=local,dest=/tmp/.buildx-cache-new \
+            --load \
+            -t ${{ secrets.DOCKER_USERNAME }}/backend1:${{ needs.version-and-tag.outputs.new_tag }} ./backend1
+          docker tag ${{ secrets.DOCKER_USERNAME }}/backend1:${{ needs.version-and-tag.outputs.new_tag }} ${{ secrets.DOCKER_USERNAME }}/backend1:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/backend1:${{ needs.version-and-tag.outputs.new_tag }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/backend1:latest
+          rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      - name: Build and Push Backend2 Image (with cache)
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker buildx build \
+            --cache-from=type=local,src=/tmp/.buildx-cache \
+            --cache-to=type=local,dest=/tmp/.buildx-cache-new \
+            --load \
+            -t ${{ secrets.DOCKER_USERNAME }}/backend2:${{ needs.version-and-tag.outputs.new_tag }} ./backend2
+          docker tag ${{ secrets.DOCKER_USERNAME }}/backend2:${{ needs.version-and-tag.outputs.new_tag }} ${{ secrets.DOCKER_USERNAME }}/backend2:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/backend2:${{ needs.version-and-tag.outputs.new_tag }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/backend2:latest
+          rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      - name: Save Backend1 Docker Image as tar
+        run: |
+          docker save -o backend1-${{ needs.version-and-tag.outputs.new_tag }}.tar ${{ secrets.DOCKER_USERNAME }}/backend1:${{ needs.version-and-tag.outputs.new_tag }}
+      - name: Upload Backend1 Docker Image tar Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend1-${{ needs.version-and-tag.outputs.new_tag }}.tar
+          path: backend1-${{ needs.version-and-tag.outputs.new_tag }}.tar
+      - name: Save Backend2 Docker Image as tar
+        run: |
+          docker save -o backend2-${{ needs.version-and-tag.outputs.new_tag }}.tar ${{ secrets.DOCKER_USERNAME }}/backend2:${{ needs.version-and-tag.outputs.new_tag }}
+      - name: Upload Backend2 Docker Image tar Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend2-${{ needs.version-and-tag.outputs.new_tag }}.tar
+          path: backend2-${{ needs.version-and-tag.outputs.new_tag }}.tar
+s
+  docker-deployment:
+    runs-on: frontend
+    needs: [docker-build-push-frontend, docker-build-push-backend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Transfer docker-compose.yaml to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no docker-compose.yaml ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/
+      - name: SSH and Deploy on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            cd /home/ubuntu
+            mkdir -p backend1 backend2 frontend
+             echo "DB_HOST=${{ secrets.DB_HOST }}" > ./backend1/.env
+            echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> ./backend1/.env
+            echo "DB_CLIENT=${{ secrets.DB_CLIENT }}" >> ./backend1/.env
+            echo "DB_PORT=${{ secrets.DB_PORT }}" >> ./backend1/.env
+            echo "DB_USER=${{ secrets.DB_USER }}" >> ./backend1/.env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> ./backend1/.env
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> ./backend1/.env
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> ./backend1/.env
+            echo "CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}" >> ./backend1/.env
+            echo "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" >> ./backend1/.env
+            echo "PORT=${{ secrets.BACKEND1_PORT }}" >> ./backend1/.env
+            cp ./backend1/.env ./backend2/.env
+            echo "PORT=${{ secrets.BACKEND1_PORT }}" >> ./backend1/.env
+            echo "PORT=${{ secrets.BACKEND2_PORT }}" >> ./backend2/.env
+            echo "VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}" > ./frontend/.env
+            echo "POSTGRES_USER=${{ secrets.DB_USER }}" > .env
+            echo "POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "POSTGRES_DB=${{ secrets.DB_NAME }}" >> .env
+            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
+            docker compose --env-file .env pull
+            docker compose --env-file .env up -d
+            docker exec backend1 yarn migrate
+            docker exec backend2 yarn migrate
+          EOF
+  github-release:
+    runs-on: frontend
+    needs:
+      [
+        docker-build-push-frontend,
+        docker-build-push-backend,
+        version-and-tag,
+        docker-deployment,
+      ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version-and-tag.outputs.new_tag }}
+          name: Release ${{ needs.version-and-tag.outputs.new_tag }}
+          body: |
+            New release: ${{ needs.version-and-tag.outputs.new_tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
