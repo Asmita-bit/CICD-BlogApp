@@ -26,7 +26,7 @@ import { useUser, useAuth } from "@clerk/clerk-react";
 import axios from "axios";
 import { marked } from "marked";
 
-const COMMENTS_API = "http://172.31.4.20:5435/api/comments";
+const COMMENTS_API = "http://13.203.103.248:5435/api/comments";
 
 const SingleBlog: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -94,7 +94,7 @@ const SingleBlog: React.FC = () => {
       <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5" }}>
         {Header}
         <Container maxWidth="md" sx={{ mt: 4 }}>
-          <Alert severity="warning">Blog not found</Alert>
+          <Alert severity="warning">Blog not found !s</Alert>
         </Container>
       </Box>
     );
