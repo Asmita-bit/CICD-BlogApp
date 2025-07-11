@@ -100,7 +100,6 @@ const SingleBlog: React.FC = () => {
     );
   }
 
-  // Show only the "Add Comment" button initially
   const handleShowCommentForm = () => {
     // If user is not present in backend, redirect to complete-signup (handles sign in too)
     if ((!userLoading && !backendUser) || !isSignedIn) {
