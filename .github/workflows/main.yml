@@ -11,7 +11,7 @@ on:
       - .github/workflows/main.yml
 jobs:
   version-and-tag:
-    runs-on: frontend
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     outputs:
       new_tag: ${{ steps.tag.outputs.new_tag }}
@@ -56,7 +56,7 @@ jobs:
       - name: Show New Tag
         run: echo "New version is ${{ steps.tag.outputs.new_tag }}"
   docker-build-push-frontend:
-    runs-on: frontend
+    runs-on: self-hosted
     needs: version-and-tag
     steps:
       - uses: actions/checkout@v4
@@ -93,7 +93,7 @@ jobs:
           name: frontend-${{ needs.version-and-tag.outputs.new_tag }}.tar
           path: frontend-${{ needs.version-and-tag.outputs.new_tag }}.tar
   docker-build-push-backend:
-    runs-on: backend
+    runs-on: self-hosted
     needs: [version-and-tag, docker-build-push-frontend]
     steps:
       - uses: actions/checkout@v4
@@ -150,7 +150,7 @@ jobs:
           name: backend2-${{ needs.version-and-tag.outputs.new_tag }}.tar
           path: backend2-${{ needs.version-and-tag.outputs.new_tag }}.tar
   security-scan:
-    runs-on: frontend
+    runs-on: self-hosted
     needs: [docker-build-push-frontend, docker-build-push-backend]
     steps:
       - uses: actions/checkout@v4
@@ -199,7 +199,7 @@ jobs:
           git diff --cached --quiet || git commit -m "Update scan report"
           git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/Asmita-bit/trivy-pages.git main
   docker-deployment:
-    runs-on: frontend
+    runs-on: self-hosted
     needs: [docker-build-push-frontend, docker-build-push-backend, security-scan]
     steps:
       - uses: actions/checkout@v4
@@ -241,7 +241,7 @@ jobs:
             docker exec backend2 yarn migrate
           EOF
   github-release:
-    runs-on: frontend
+    runs-on: self-hosted
     needs:
       [
         docker-build-push-frontend,
