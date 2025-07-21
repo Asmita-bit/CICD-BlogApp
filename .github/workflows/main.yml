@@ -11,7 +11,7 @@ on:
       - .github/workflows/main.yml
 jobs:
   version-and-tag:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, frontend]
     if: github.ref == 'refs/heads/main'
     outputs:
       new_tag: ${{ steps.tag.outputs.new_tag }}
@@ -56,7 +56,7 @@ jobs:
       - name: Show New Tag
         run: echo "New version is ${{ steps.tag.outputs.new_tag }}"
   docker-build-push-frontend:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, frontend]
     needs: version-and-tag
     steps:
       - uses: actions/checkout@v4
@@ -93,7 +93,7 @@ jobs:
           name: frontend-${{ needs.version-and-tag.outputs.new_tag }}.tar
           path: frontend-${{ needs.version-and-tag.outputs.new_tag }}.tar
   docker-build-push-backend:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, frontend]
     needs: [version-and-tag, docker-build-push-frontend]
     steps:
       - uses: actions/checkout@v4
@@ -150,7 +150,7 @@ jobs:
           name: backend2-${{ needs.version-and-tag.outputs.new_tag }}.tar
           path: backend2-${{ needs.version-and-tag.outputs.new_tag }}.tar
   security-scan:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, frontend]
     needs: [docker-build-push-frontend, docker-build-push-backend]
     steps:
       - uses: actions/checkout@v4
