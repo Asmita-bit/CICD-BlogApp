@@ -12,7 +12,7 @@ import {
 import { useAuth, useUser, SignInButton } from "@clerk/clerk-react";
 import axios from "axios";
 
-const USER_API = "http://13.203.103.248:5434/api/users";
+const USER_API = "http://184.72.109.88:5434/api/users";
 
 const CompleteSignup: React.FC = () => {
   const [firstName, setFirstName] = useState("");
