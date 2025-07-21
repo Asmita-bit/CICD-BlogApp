@@ -199,7 +199,7 @@ jobs:
           git diff --cached --quiet || git commit -m "Update scan report"
           git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/Asmita-bit/trivy-pages.git main
   docker-deployment:
-    runs-on: [self-hosted, backend]
+    runs-on: [self-hosted, frontend]
     needs: [docker-build-push-frontend, docker-build-push-backend, security-scan]
     steps:
       - uses: actions/checkout@v4
@@ -241,7 +241,7 @@ jobs:
             docker exec backend2 yarn migrate
           EOF
   github-release:
-    runs-on: [self-hosted, backend]
+    runs-on: [self-hosted, frontend]
     needs:
       [
         docker-build-push-frontend,
