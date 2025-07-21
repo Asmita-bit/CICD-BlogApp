@@ -210,11 +210,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Transfer docker-compose.yaml to EC2
         run: |
-          scp -o StrictHostKeyChecking=no docker-compose.yaml ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/
+          scp -o StrictHostKeyChecking=no docker-compose.yaml ec2-user@${{ secrets.EC2_PUBLIC_IP }}:/home/ec2-user
       - name: SSH and Deploy on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-            cd /home/ubuntu
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            cd /home/ec2-user
             mkdir -p backend1 backend2 frontend
              echo "DB_HOST=${{ secrets.DB_HOST }}" > ./backend1/.env
             echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> ./backend1/.env
