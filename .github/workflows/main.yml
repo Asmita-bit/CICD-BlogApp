@@ -211,17 +211,7 @@ jobs:
       - name: Transfer docker-compose.yaml to EC2
         run: |
           scp -o StrictHostKeyChecking=no docker-compose.yaml ec2-user@${{ secrets.EC2_PUBLIC_IP }}:/home/ec2-user
-      - name: Clean up docker containers if they exist
-        run: |
-          for container in backend1 backend2; do
-            if docker ps -a --format '{{.Names}}' | grep -q "^$container$"; then
-              docker stop "$container"
-              docker rm "$container"
-            else
-              echo "Container $container does not exist, skipping."
-            fi
-          done
-
+      
       - name: SSH and Deploy on EC2
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
@@ -246,6 +236,15 @@ jobs:
             echo "POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "POSTGRES_DB=${{ secrets.DB_NAME }}" >> .env
             echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
+            for container in backend1 backend2; do
+            if docker ps -a --format '{{.Names}}' | grep -q "^$container$"; then
+              docker stop "$container"
+              docker rm "$container"
+            else
+              echo "Container $container does not exist, skipping."
+            fi
+            done
+            
             docker compose --env-file .env pull
             docker compose --env-file .env up -d
             docker exec backend1 yarn migrate
