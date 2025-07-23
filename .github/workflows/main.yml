@@ -1,4 +1,4 @@
-name: Fellowship Project CI/CD Pipeline
+name: Fellowship Project CI/CD Pipelinee
 on:
   push:
     branches:
