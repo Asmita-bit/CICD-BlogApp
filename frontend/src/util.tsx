@@ -6,7 +6,7 @@ export async function openPreview(content:string) {
   if (win) {
     const doc = win.document;
 
-    // Build document manually
+    // Build document manuallyy
     const html = doc.createElement("html");
     const head = doc.createElement("head");
     const body = doc.createElement("body");
