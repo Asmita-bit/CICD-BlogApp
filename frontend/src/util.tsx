@@ -23,7 +23,6 @@ export async function openPreview(content:string) {
     `;
     head.appendChild(style);
 
-    // Insert your HTML content as raw HTML
     body.innerHTML = htmlContent; // Make sure this is safe or sanitized
 
     // Assemble the document
@@ -31,6 +30,6 @@ export async function openPreview(content:string) {
     html.appendChild(body);
     doc.replaceChild(html, doc.documentElement);
   } else {
-    alert("Popup blocked! Please allow popups for this site.");
+    alert("Popup blocked! Please allow popups for this site. hello");
   }
 }
