@@ -245,9 +245,7 @@ jobs:
             docker compose --env-file .env pull
             docker compose --env-file .env up -d
 
-            # Run migrations
-            docker exec backend1 yarn migrate || echo "Migration failed on backend1"
-            docker exec backend2 yarn migrate || echo "Migration failed on backend2"
+      
           EOF
 
   github-release:
