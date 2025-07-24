@@ -244,8 +244,6 @@ jobs:
             
             docker compose --env-file .env pull
             docker compose --env-file .env up -d
-
-      
           EOF
 
   github-release:
