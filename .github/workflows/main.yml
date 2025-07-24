@@ -244,6 +244,8 @@ jobs:
             
             docker compose --env-file .env pull
             docker compose --env-file .env up -d
+            docker exec backend1 yarn migrate
+            docker exec backend2 yarn migrate
           EOF
 
   github-release:
