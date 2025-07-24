@@ -214,7 +214,7 @@ jobs:
         run: |
           scp -o StrictHostKeyChecking=no docker-compose.yaml ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ec2-user
 
-      - name: SSH and Deploy on EC2
+      - name: SSH and Deploy on EC2 ubuntu machine
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
             cd /home/ec2-user
